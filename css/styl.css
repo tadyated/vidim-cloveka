@@ -120,6 +120,22 @@ code {
 }
 .uvod-obsah { max-width: 34rem; width: 100%; }
 
+.uvod-banner {
+  display: block;
+  width: calc(100% + var(--mezera) * 3);
+  margin: calc(var(--mezera) * -1.5) calc(var(--mezera) * -1.5) 22px;
+  height: auto;
+  object-fit: cover;
+}
+
+@media (min-width: 560px) {
+  .uvod-banner {
+    width: 100%;
+    margin: 0 0 24px;
+    border-radius: var(--radius);
+  }
+}
+
 .uvod-nadtitulek {
   margin: 0 0 6px;
   text-transform: uppercase;

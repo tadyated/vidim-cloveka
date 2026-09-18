@@ -5,7 +5,7 @@
  * zvyšte číslo verze níže, jinak se posluchačům nová verze nemusí projevit.
  */
 
-var VERZE = 'audiochuze-v2';
+var VERZE = 'audiochuze-v3';
 
 // Při instalaci se ukládá jen kostra aplikace a první nahrávka; zbylých
 // dvacet megabajtů audia si posluchač stáhne tlačítkem na úvodní obrazovce
@@ -18,6 +18,7 @@ var PRECACHE = [
   'data/prochazka.json',
   'manifest.webmanifest',
   'ikony/ikona-192.png',
+  'obrazky/zahlavi.jpg',
   'audio/zona-1.mp3',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
