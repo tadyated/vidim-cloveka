@@ -68,7 +68,7 @@ for i, (nazev, lat, lon, r, kde) in enumerate(ZONY, start=1):
 data = {
     "prochazka": {
         "nadtitulek": "Audioprocházka",
-        "nazev": "Název procházky",
+        "nazev": "Vidím člověka",
         "perex": "Procházka po místech, která v Plzni znají lidé bez domova. "
                  "Sedm nahrávek se spustí samo cestou mezi zastaveními; "
                  "stačí sluchátka a chůze.",

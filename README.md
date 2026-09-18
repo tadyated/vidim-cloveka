@@ -1,4 +1,4 @@
-# Audioprocházka
+# Vidím člověka – audioprocházka
 
 Statická webová aplikace pro geolokovanou audioprocházku o sedmi zastávkách.
 Posluchač otevře adresu nebo QR kód v mobilním prohlížeči, bez registrace,
@@ -91,7 +91,7 @@ git init
 git add .
 git commit -m "pridat: audioprochazka"
 git branch -M main
-git remote add origin git@github.com:UCET/NAZEV-REPOZITARE.git
+git remote add origin git@github.com:lacotousek-tat/vidim-cloveka.git
 git push -u origin main
 ```
 
@@ -99,7 +99,7 @@ Poté v repozitáři **Settings → Pages → Source: Deploy from a branch →
 Branch: `main` / `(root)`** a uložit. Za minutu až dvě je procházka na adrese
 
 ```
-https://UCET.github.io/NAZEV-REPOZITARE/
+https://lacotousek-tat.github.io/vidim-cloveka/
 ```
 
 Tři poznámky k nasazení:
@@ -123,7 +123,7 @@ kteří si procházku už jednou otevřeli, starou verzi z mezipaměti.
 
 ```bash
 pip install "qrcode[pil]"
-python3 scripts/qr_kod.py https://UCET.github.io/NAZEV-REPOZITARE/
+python3 scripts/qr_kod.py https://lacotousek-tat.github.io/vidim-cloveka/
 ```
 
 Vznikne `qr-kod.png` a `qr-kod.svg`. Pro tisk na ceduli použijte SVG; na

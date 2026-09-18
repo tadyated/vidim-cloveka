@@ -1,7 +1,7 @@
 {
-  "name": "Audioprocházka",
-  "short_name": "Procházka",
-  "description": "Geolokovaná audioprocházka o sedmi zastávkách.",
+  "name": "Vidím člověka",
+  "short_name": "Vidím člověka",
+  "description": "Geolokovaná audioprocházka Tady a teď, o. p. s.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
