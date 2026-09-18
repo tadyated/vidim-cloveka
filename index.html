@@ -23,17 +23,18 @@
     <p id="uvod-perex" class="uvod-perex">Krátký popis procházky. Doplňte v souboru <code>data/zastavky.json</code>.</p>
 
     <ul class="uvod-fakta">
-      <li><strong id="fakt-pocet">7</strong> zastávek</li>
+      <li><strong id="fakt-pocet">7</strong> zón</li>
       <li><strong id="fakt-delka">–</strong> stopáže</li>
       <li><strong id="fakt-trasa">–</strong> trasy</li>
     </ul>
 
     <button id="btn-start" class="btn btn-hlavni" type="button">Začít procházku</button>
+    <button id="btn-stahnout" class="btn btn-vedlejsi" type="button">Stáhnout nahrávky pro poslech bez signálu</button>
 
     <p class="uvod-pozn">
       Aplikace požádá o přístup k poloze. Nahrávky se pak spouštějí samy,
-      jakmile se přiblížíte k zastávce. Přehrát je můžete kdykoli i ručně.
-      Poloha zůstává ve vašem telefonu a nikam se neodesílá.
+      jakmile dojdete na místo, kde daný úsek začíná. Přehrát je můžete kdykoli
+      i ručně. Poloha zůstává ve vašem telefonu a nikam se neodesílá.
     </p>
     <p class="uvod-pozn uvod-pozn-slabsi">
       Doporučujeme sluchátka. Sledujte provoz – zvuk si žádá pozornost, kterou ulice potřebuje také.
@@ -51,21 +52,21 @@
     </div>
   </header>
 
-  <div id="mapa" class="mapa" role="application" aria-label="Mapa zastávek"></div>
+  <div id="mapa" class="mapa" role="application" aria-label="Mapa trasy a zón"></div>
 
   <main class="seznam-obal">
     <div id="hlaseni" class="hlaseni" role="status" aria-live="polite" hidden></div>
     <ol id="seznam" class="seznam"></ol>
     <footer class="paticka">
       <p id="paticka-text">Audioprocházka</p>
-      <p><button id="btn-reset" class="btn btn-textovy" type="button">Znovu povolit automatické přehrávání</button></p>
+      <p><button id="btn-reset" class="btn btn-textovy" type="button">Začít znovu od první zóny</button></p>
     </footer>
   </main>
 
   <!-- PŘEHRÁVAČ -->
   <div id="prehravac" class="prehravac" hidden>
     <div class="prehravac-info">
-      <p class="prehravac-nadtitulek" id="prehravac-cislo">Zastávka 1</p>
+      <p class="prehravac-nadtitulek" id="prehravac-cislo">Zóna 1</p>
       <p class="prehravac-nazev" id="prehravac-nazev">—</p>
     </div>
     <div class="prehravac-ovladani">

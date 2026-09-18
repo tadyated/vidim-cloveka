@@ -7,23 +7,23 @@
 
 var VERZE = 'audiochuze-v1';
 
+// Při instalaci se ukládá jen kostra aplikace a první nahrávka; zbylých
+// dvacet megabajtů audia si posluchač stáhne tlačítkem na úvodní obrazovce
+// nebo se uloží samo tím, že nahrávku přehraje.
 var PRECACHE = [
   './',
   'index.html',
   'css/styl.css',
   'js/app.js',
-  'data/zastavky.json',
+  'data/prochazka.json',
   'manifest.webmanifest',
-  'audio/zastavka-1.mp3',
-  'audio/zastavka-2.mp3',
-  'audio/zastavka-3.mp3',
-  'audio/zastavka-4.mp3',
-  'audio/zastavka-5.mp3',
-  'audio/zastavka-6.mp3',
-  'audio/zastavka-7.mp3',
+  'ikony/ikona-192.png',
+  'audio/zona-1.mp3',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
 ];
+
+var MEDIA = 'audiochuze-media';
 
 self.addEventListener('install', function (e) {
   e.waitUntil(
@@ -40,7 +40,7 @@ self.addEventListener('activate', function (e) {
   e.waitUntil(
     caches.keys().then(function (klice) {
       return Promise.all(klice.map(function (k) {
-        return k === VERZE ? null : caches.delete(k);
+        return (k === VERZE || k === MEDIA) ? null : caches.delete(k);
       }));
     }).then(function () { return self.clients.claim(); })
   );
@@ -55,7 +55,7 @@ self.addEventListener('fetch', function (e) {
   if (req.url.indexOf('tile.openstreetmap.org') !== -1) { return; }
 
   // Data procházky: nejdřív síť, ať se opravy projeví; při výpadku mezipaměť.
-  if (req.url.indexOf('data/zastavky.json') !== -1) {
+  if (req.url.indexOf('data/prochazka.json') !== -1) {
     e.respondWith(
       fetch(req).then(function (odpoved) {
         var kopie = odpoved.clone();
@@ -66,17 +66,20 @@ self.addEventListener('fetch', function (e) {
     return;
   }
 
+  // Nahrávky mají vlastní mezipaměť, kterou aktualizace aplikace nemaže.
+  var jeAudio = /\/audio\/[^/]+\.mp3$/.test(req.url);
+
   e.respondWith(
     caches.match(req).then(function (nalezeno) {
       if (nalezeno) { return nalezeno; }
       return fetch(req).then(function (odpoved) {
         if (odpoved && odpoved.status === 200 && req.url.indexOf(self.location.origin) === 0) {
           var kopie = odpoved.clone();
-          caches.open(VERZE).then(function (c) { c.put(req, kopie); });
+          caches.open(jeAudio ? MEDIA : VERZE).then(function (c) { c.put(req, kopie); });
         }
         return odpoved;
       }).catch(function () {
-        return caches.match('index.html');
+        return jeAudio ? Response.error() : caches.match('index.html');
       });
     })
   );

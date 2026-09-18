@@ -19,6 +19,9 @@
 
 * { box-sizing: border-box; }
 
+/* Atribut hidden musí přebít display:flex u .uvod a .aplikace. */
+[hidden] { display: none !important; }
+
 html, body {
   margin: 0;
   padding: 0;
@@ -65,6 +68,18 @@ code {
   border-radius: var(--radius);
 }
 .btn-hlavni:active { background: var(--barva-akcent-tmavy); }
+
+.btn-vedlejsi {
+  width: 100%;
+  margin-top: 10px;
+  background: transparent;
+  border: 1px solid var(--barva-linka);
+  color: var(--barva-text-slaby);
+  font-size: 0.92rem;
+  border-radius: var(--radius);
+  padding: 13px;
+}
+.btn-vedlejsi:disabled { opacity: 0.7; cursor: default; }
 
 .btn-textovy {
   color: var(--barva-text-slaby);
@@ -206,6 +221,7 @@ code {
   transition: border-color 0.2s, background 0.2s;
 }
 .zastavka.je-blizko { border-color: var(--barva-aktivni); }
+.zastavka.je-na-rade .zastavka-cislo { box-shadow: 0 0 0 3px rgba(224, 164, 88, 0.25); }
 .zastavka.je-aktivni { border-color: var(--barva-akcent); background: var(--barva-panel-svetly); }
 
 .zastavka-hlava {
@@ -343,6 +359,17 @@ code {
 .znacka-aktivni { background: var(--barva-akcent); border-color: var(--barva-akcent); color: #1a1105; }
 
 .leaflet-container { background: #1b2229; }
+
+.mapa-tlacitko {
+  font: 600 13px/1 var(--font);
+  background: var(--barva-panel);
+  color: var(--barva-text);
+  border: 1px solid var(--barva-linka);
+  border-radius: var(--radius-maly);
+  min-width: 40px;
+  height: 40px;
+  cursor: pointer;
+}
 
 /* --- Desktop -------------------------------------------------------- */
 

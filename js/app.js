@@ -1,41 +1,44 @@
 /* Audioprocházka – aplikační logika.
  *
+ * Model: procházka se skládá ze sedmi ZÓN. Zóna je úsek trasy, na jehož
+ * začátku se spustí nahrávka; poslouchá se tedy při přesunu mezi zastaveními,
+ * nikoli na zastavení samotném. Výjimkou je zóna 6, která zaznívá přímo
+ * u jezu. Model vychází z podrobného harmonogramu procházky.
+ *
  * Návrhové zásady:
- *  – Veškerá data o procházce jsou v data/zastavky.json; tento soubor se needituje
- *    při změně obsahu, jen při změně chování.
- *  – Automatické přehrávání je nadstavba, nikoli podmínka. Bez svolení k poloze
- *    zůstává procházka plně použitelná ručně.
+ *  – Veškerý obsah je v data/prochazka.json; tento soubor se upravuje jen
+ *    při změně chování, nikoli obsahu.
+ *  – Automatika je nadstavba. Bez svolení k poloze zůstává procházka plně
+ *    použitelná ručně.
+ *  – Zóny se spouštějí v pořadí. Body zón 2 a 4 leží 75 m od sebe na
+ *    protilehlých březích řeky; bez sekvenčního zámku by chyba GPS spustila
+ *    nesprávnou nahrávku.
  *  – Poloha se nikam neodesílá; zpracovává se výhradně v prohlížeči.
  */
 (function () {
   'use strict';
 
-  /* --- Výchozí hodnoty, které lze přepsat v JSON ---------------------- */
-
   var VYCHOZI = {
-    polomer: 30,          // metry – vzdálenost, při níž se zastávka spustí
+    polomer: 30,          // metry – vzdálenost, při níž se zóna spustí
     hystereze: 1.6,       // násobek poloměru; teprve za ním je posluchač „venku“
     presnost_limit: 60,   // metry – horší odečet polohy se pro spouštění ignoruje
-    skok: 15              // sekundy tlačítek −15 / +15
+    skok: 15,             // sekundy tlačítek −15 / +15
+    sekvencne: true       // automaticky se spouští jen zóna, která je na řadě
   };
 
   var TICHO = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAABErAAABAAgAZGF0YQAAAAA=';
 
-  /* --- Stav ----------------------------------------------------------- */
-
   var data = null;
-  var zastavky = [];
+  var zony = [];
   var stav = [];              // { prehrano, uvnitr, vzdalenost }
-  var aktivni = -1;           // index právě přehrávané zastávky
+  var dalsi = 0;              // index zóny, která je na řadě
+  var aktivni = -1;
   var automatika = true;
   var mapa = null;
   var znacky = [];
-  var kruhy = [];
   var znackaUzivatele = null;
   var kruhPresnosti = null;
-  var sledovaciId = null;
   var wakeLock = null;
-  var mapaVycentrovana = false;
 
   var zvuk = document.getElementById('zvuk');
 
@@ -79,23 +82,22 @@
     return (n[klic] !== undefined && n[klic] !== null) ? n[klic] : VYCHOZI[klic];
   }
 
-  function polomerZastavky(i) {
-    var z = zastavky[i];
-    return (z && z.polomer) ? z.polomer : nastaveni('polomer');
+  function polomerZony(i) {
+    return (zony[i] && zony[i].polomer) ? zony[i].polomer : nastaveni('polomer');
   }
 
   /* --- Načtení dat ----------------------------------------------------- */
 
   function nactiData() {
-    return fetch('data/zastavky.json', { cache: 'no-cache' })
+    return fetch('data/prochazka.json', { cache: 'no-cache' })
       .then(function (r) {
         if (!r.ok) { throw new Error('HTTP ' + r.status); }
         return r.json();
       })
       .then(function (json) {
         data = json;
-        zastavky = json.zastavky || [];
-        stav = zastavky.map(function () {
+        zony = json.zony || [];
+        stav = zony.map(function () {
           return { prehrano: false, uvnitr: false, vzdalenost: null };
         });
         vyplnUvod();
@@ -109,12 +111,12 @@
     $('uvod-nadpis').textContent = p.nazev || 'Audioprocházka';
     $('uvod-perex').textContent = p.perex || '';
     $('hlavicka-titulek').textContent = p.nazev || 'Audioprocházka';
-    $('paticka-text').textContent = p.paticka || (p.nazev || 'Audioprocházka');
+    $('paticka-text').textContent = p.paticka || '';
 
-    $('fakt-pocet').textContent = zastavky.length;
+    $('fakt-pocet').textContent = zony.length;
 
-    var minuty = zastavky.reduce(function (s, z) { return s + (z.stopaz_min || 0); }, 0);
-    $('fakt-delka').textContent = minuty ? (minuty + ' min') : '–';
+    var sekundy = zony.reduce(function (s, z) { return s + (z.stopaz_s || 0); }, 0);
+    $('fakt-delka').textContent = sekundy ? (Math.round(sekundy / 60) + ' min') : '–';
     $('fakt-trasa').textContent = p.delka_trasy || '–';
   }
 
@@ -122,23 +124,30 @@
 
   function postavMapu() {
     var p = data.prochazka || {};
-    mapa = L.map('mapa', { zoomControl: true, attributionControl: true });
+    mapa = L.map('mapa', { zoomControl: true });
 
-    var dlazdice = (p.dlazdice) || 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-    var uvedeni = (p.dlazdice_uvedeni) || '&copy; přispěvatelé <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
+    L.tileLayer(p.dlazdice || 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: p.dlazdice_uvedeni ||
+        '&copy; přispěvatelé <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+    }).addTo(mapa);
 
-    L.tileLayer(dlazdice, { maxZoom: 19, attribution: uvedeni }).addTo(mapa);
+    if (data.trasa && data.trasa.length) {
+      L.polyline(data.trasa, { color: '#e0a458', weight: 4, opacity: 0.65 }).addTo(mapa);
+    }
 
-    zastavky.forEach(function (z, i) {
-      var kruh = L.circle([z.lat, z.lon], {
-        radius: polomerZastavky(i),
-        color: '#e0a458',
-        weight: 1,
-        opacity: 0.6,
-        fillColor: '#e0a458',
-        fillOpacity: 0.09
+    (data.zastaveni || []).forEach(function (z) {
+      L.circleMarker([z.lat, z.lon], {
+        radius: 5, color: '#eef2f5', weight: 2, fillColor: '#12171c', fillOpacity: 1
+      }).addTo(mapa).bindTooltip(z.nazev);
+    });
+
+    zony.forEach(function (z, i) {
+      L.circle([z.lat, z.lon], {
+        radius: polomerZony(i),
+        color: '#e0a458', weight: 1, opacity: 0.5,
+        fillColor: '#e0a458', fillOpacity: 0.09
       }).addTo(mapa);
-      kruhy.push(kruh);
 
       var znacka = L.marker([z.lat, z.lon], {
         icon: L.divIcon({
@@ -148,19 +157,39 @@
           iconAnchor: [14, 14]
         }),
         title: z.nazev,
-        keyboard: true,
-        alt: 'Zastávka ' + (i + 1) + ': ' + z.nazev
+        alt: 'Zóna ' + (i + 1) + ': ' + z.nazev
       }).addTo(mapa);
 
-      znacka.on('click', function () { prehraj(i, 'mapa'); });
+      znacka.on('click', function () { prehraj(i, 'rucne'); });
       znacky.push(znacka);
     });
 
-    if (zastavky.length) {
-      mapa.fitBounds(L.latLngBounds(zastavky.map(function (z) { return [z.lat, z.lon]; })).pad(0.25));
-    } else {
-      mapa.setView([49.7475, 13.3776], 14);
-    }
+    // Tlačítko pro vycentrování na vlastní polohu.
+    var ovladac = L.control({ position: 'topright' });
+    ovladac.onAdd = function () {
+      var el = L.DomUtil.create('button', 'mapa-tlacitko');
+      el.type = 'button';
+      el.textContent = 'Já';
+      el.title = 'Vycentrovat na mou polohu';
+      L.DomEvent.disableClickPropagation(el);
+      L.DomEvent.on(el, 'click', function () {
+        if (znackaUzivatele) { mapa.setView(znackaUzivatele.getLatLng(), 17); }
+        else { hlaseni('Poloha zatím není známá.'); }
+      });
+      return el;
+    };
+    ovladac.addTo(mapa);
+
+    srovnejMapu();
+  }
+
+  function srovnejMapu() {
+    // Záměrně jen trasa a zóny: kdyby se do výřezu počítala i poloha
+    // posluchače, který aplikaci otevře doma, mapa by se oddálila na celé město.
+    var body = (data.trasa && data.trasa.length)
+      ? data.trasa
+      : zony.map(function (z) { return [z.lat, z.lon]; });
+    if (body.length) { mapa.fitBounds(L.latLngBounds(body).pad(0.1)); }
   }
 
   /* --- Seznam ----------------------------------------------------------- */
@@ -169,10 +198,10 @@
     var ol = $('seznam');
     ol.innerHTML = '';
 
-    zastavky.forEach(function (z, i) {
+    zony.forEach(function (z, i) {
       var li = document.createElement('li');
       li.className = 'zastavka';
-      li.id = 'zastavka-' + i;
+      li.id = 'zona-' + i;
 
       var hlava = document.createElement('div');
       hlava.className = 'zastavka-hlava';
@@ -188,27 +217,23 @@
       var nazev = document.createElement('p');
       nazev.className = 'zastavka-nazev';
       nazev.textContent = z.nazev;
+      texty.appendChild(nazev);
+
+      if (z.spusti_se) {
+        var kde = document.createElement('p');
+        kde.className = 'zastavka-meta';
+        kde.textContent = z.spusti_se;
+        texty.appendChild(kde);
+      }
 
       var meta = document.createElement('p');
       meta.className = 'zastavka-meta';
-      var stopaz = document.createElement('span');
-      stopaz.textContent = z.stopaz_min ? (z.stopaz_min + ' min') : '';
-      var oddelovac = document.createTextNode(z.stopaz_min ? ' · ' : '');
+      meta.appendChild(document.createTextNode(z.stopaz_s ? (formatCas(z.stopaz_s) + ' · ') : ''));
       var vzd = document.createElement('span');
       vzd.className = 'zastavka-vzdalenost';
       vzd.id = 'vzdalenost-' + i;
       vzd.textContent = '—';
-      meta.appendChild(stopaz);
-      meta.appendChild(oddelovac);
       meta.appendChild(vzd);
-
-      texty.appendChild(nazev);
-      if (z.misto) {
-        var misto = document.createElement('p');
-        misto.className = 'zastavka-meta';
-        misto.textContent = z.misto;
-        texty.appendChild(misto);
-      }
       texty.appendChild(meta);
 
       hlava.appendChild(cislo);
@@ -228,15 +253,14 @@
       });
       akce.appendChild(btn);
 
-      if (z.lat && z.lon) {
-        var navigace = document.createElement('a');
-        navigace.className = 'btn zastavka-odkaz';
-        navigace.href = 'https://www.openstreetmap.org/?mlat=' + z.lat + '&mlon=' + z.lon + '#map=18/' + z.lat + '/' + z.lon;
-        navigace.target = '_blank';
-        navigace.rel = 'noopener';
-        navigace.textContent = 'Ukázat v mapě';
-        akce.appendChild(navigace);
-      }
+      var odkaz = document.createElement('a');
+      odkaz.className = 'btn zastavka-odkaz';
+      odkaz.href = 'https://www.openstreetmap.org/?mlat=' + z.lat + '&mlon=' + z.lon +
+                   '#map=18/' + z.lat + '/' + z.lon;
+      odkaz.target = '_blank';
+      odkaz.rel = 'noopener';
+      odkaz.textContent = 'Ukázat v mapě';
+      akce.appendChild(odkaz);
 
       li.appendChild(akce);
 
@@ -245,10 +269,10 @@
         det.className = 'zastavka-prepis';
         var sum = document.createElement('summary');
         sum.textContent = 'Přepis nahrávky';
-        var p = document.createElement('p');
-        p.textContent = z.prepis;
+        var pp = document.createElement('p');
+        pp.textContent = z.prepis;
         det.appendChild(sum);
-        det.appendChild(p);
+        det.appendChild(pp);
         li.appendChild(det);
       }
 
@@ -257,12 +281,13 @@
   }
 
   function obnovSeznam() {
-    zastavky.forEach(function (z, i) {
-      var li = $('zastavka-' + i);
+    zony.forEach(function (z, i) {
+      var li = $('zona-' + i);
       if (!li) { return; }
       li.classList.toggle('je-prehrano', stav[i].prehrano);
       li.classList.toggle('je-aktivni', aktivni === i);
       li.classList.toggle('je-blizko', stav[i].uvnitr && aktivni !== i);
+      li.classList.toggle('je-na-rade', dalsi === i && !stav[i].prehrano);
 
       var vzd = $('vzdalenost-' + i);
       if (vzd) { vzd.textContent = formatVzdalenost(stav[i].vzdalenost); }
@@ -288,14 +313,15 @@
   /* --- Přehrávání ------------------------------------------------------- */
 
   function prehraj(i, duvod) {
-    var z = zastavky[i];
+    var z = zony[i];
     if (!z || !z.audio) { return; }
 
     if (aktivni !== i) {
       aktivni = i;
       zvuk.src = z.audio;
       zvuk.currentTime = 0;
-      $('prehravac-cislo').textContent = 'Zastávka ' + (i + 1) + (duvod === 'auto' ? ' · spuštěno polohou' : '');
+      $('prehravac-cislo').textContent = 'Zóna ' + (i + 1) +
+        (duvod === 'auto' ? ' · spuštěno polohou' : '');
       $('prehravac-nazev').textContent = z.nazev;
       $('prehravac').hidden = false;
     }
@@ -307,14 +333,15 @@
       });
     }
 
-    stav[i].prehrano = true;
+    if (!stav[i].prehrano) { stav[i].prehrano = true; }
+    if (i >= dalsi) { dalsi = i + 1; }
+
     if (duvod === 'auto') {
-      hlaseni('Zastávka ' + (i + 1) + ' – ' + z.nazev + ': nahrávka se spustila automaticky.');
+      hlaseni('Zóna ' + (i + 1) + ' – ' + z.nazev + ': nahrávka se spustila automaticky.');
+      var li = $('zona-' + i);
+      if (li) { li.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
     }
     obnovSeznam();
-
-    var li = $('zastavka-' + i);
-    if (li && duvod === 'auto') { li.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
   }
 
   function obnovPrehravac() {
@@ -336,14 +363,11 @@
     if (!('geolocation' in navigator)) {
       $('stav-gps').textContent = 'Poloha není dostupná';
       $('stav-gps').className = 'odznak odznak-chyba';
-      hlaseni('Tento prohlížeč neumí určit polohu. Procházka funguje ručně – nahrávky spouštějte tlačítkem u zastávky.');
+      hlaseni('Tento prohlížeč neumí určit polohu. Procházka funguje ručně – nahrávky spouštějte tlačítkem u zóny.');
       return;
     }
-
-    sledovaciId = navigator.geolocation.watchPosition(naPolohu, naChybu, {
-      enableHighAccuracy: true,
-      maximumAge: 5000,
-      timeout: 20000
+    navigator.geolocation.watchPosition(naPolohu, naChybu, {
+      enableHighAccuracy: true, maximumAge: 5000, timeout: 20000
     });
   }
 
@@ -353,48 +377,38 @@
     var presnost = poz.coords.accuracy;
 
     $('stav-gps').textContent = 'Poloha ±' + Math.round(presnost) + ' m';
-    $('stav-gps').className = 'odznak ' + (presnost <= nastaveni('presnost_limit') ? 'odznak-ok' : 'odznak-ceka');
+    $('stav-gps').className = 'odznak ' +
+      (presnost <= nastaveni('presnost_limit') ? 'odznak-ok' : 'odznak-ceka');
 
     if (mapa) {
       if (!znackaUzivatele) {
         znackaUzivatele = L.circleMarker([lat, lon], {
-          radius: 7, color: '#ffffff', weight: 2,
-          fillColor: '#4a90d9', fillOpacity: 1
+          radius: 7, color: '#ffffff', weight: 2, fillColor: '#4a90d9', fillOpacity: 1
         }).addTo(mapa).bindTooltip('Vaše poloha');
         kruhPresnosti = L.circle([lat, lon], {
-          radius: presnost, color: '#4a90d9', weight: 1,
-          opacity: 0.4, fillColor: '#4a90d9', fillOpacity: 0.08
+          radius: presnost, color: '#4a90d9', weight: 1, opacity: 0.4,
+          fillColor: '#4a90d9', fillOpacity: 0.08
         }).addTo(mapa);
       } else {
         znackaUzivatele.setLatLng([lat, lon]);
         kruhPresnosti.setLatLng([lat, lon]);
         kruhPresnosti.setRadius(presnost);
       }
-      if (!mapaVycentrovana) {
-        mapaVycentrovana = true;
-        var body = zastavky.map(function (z) { return [z.lat, z.lon]; });
-        body.push([lat, lon]);
-        mapa.fitBounds(L.latLngBounds(body).pad(0.2));
-      }
     }
 
     var kandidat = -1;
     var nejblizsi = Infinity;
 
-    zastavky.forEach(function (z, i) {
+    zony.forEach(function (z, i) {
       var d = vzdalenost(lat, lon, z.lat, z.lon);
       stav[i].vzdalenost = d;
 
-      var r = polomerZastavky(i);
-      var ven = r * nastaveni('hystereze');
+      var r = polomerZony(i);
+      if (d <= r) { stav[i].uvnitr = true; }
+      else if (d > r * nastaveni('hystereze')) { stav[i].uvnitr = false; }
 
-      if (d <= r) {
-        if (!stav[i].uvnitr) { stav[i].uvnitr = true; }
-      } else if (d > ven) {
-        stav[i].uvnitr = false;
-      }
-
-      if (stav[i].uvnitr && !stav[i].prehrano && d < nejblizsi) {
+      var pripustna = nastaveni('sekvencne') ? (i === dalsi) : !stav[i].prehrano;
+      if (stav[i].uvnitr && !stav[i].prehrano && pripustna && d < nejblizsi) {
         nejblizsi = d;
         kandidat = i;
       }
@@ -413,13 +427,42 @@
     $('stav-gps').className = 'odznak odznak-chyba';
     if (chyba.code === 1) {
       $('stav-gps').textContent = 'Poloha nepovolena';
-      hlaseni('Bez přístupu k poloze se nahrávky nespustí samy. Procházka ale funguje – spouštějte je tlačítkem u zastávky. Povolení lze kdykoli změnit v nastavení prohlížeče.');
+      hlaseni('Bez přístupu k poloze se nahrávky nespustí samy. Procházka ale funguje – spouštějte je tlačítkem u zóny. Povolení lze změnit v nastavení prohlížeče.');
     } else if (chyba.code === 3) {
       $('stav-gps').textContent = 'Poloha se nedaří určit';
     } else {
       $('stav-gps').textContent = 'Poloha nedostupná';
-      hlaseni('Polohu se nepodařilo určit. Nahrávky spouštějte tlačítkem u zastávky.');
+      hlaseni('Polohu se nepodařilo určit. Nahrávky spouštějte tlačítkem u zóny.');
     }
+  }
+
+  /* --- Stažení nahrávek pro offline --------------------------------------- */
+
+  function stahniVse() {
+    var btn = $('btn-stahnout');
+    if (!('caches' in window)) {
+      btn.textContent = 'Offline režim prohlížeč nepodporuje';
+      btn.disabled = true;
+      return;
+    }
+    var soubory = zony.map(function (z) { return z.audio; });
+    var hotovo = 0;
+    btn.disabled = true;
+    btn.textContent = 'Stahuji 0 / ' + soubory.length;
+
+    caches.open('audiochuze-media').then(function (cache) {
+      return Promise.all(soubory.map(function (url) {
+        return cache.add(url).catch(function () { return null; }).then(function () {
+          hotovo += 1;
+          btn.textContent = 'Stahuji ' + hotovo + ' / ' + soubory.length;
+        });
+      }));
+    }).then(function () {
+      btn.textContent = 'Nahrávky jsou uložené v telefonu';
+    }).catch(function () {
+      btn.disabled = false;
+      btn.textContent = 'Stažení se nezdařilo, zkusit znovu';
+    });
   }
 
   /* --- Zámek obrazovky ---------------------------------------------------- */
@@ -442,8 +485,8 @@
     $('uvod').hidden = true;
     $('aplikace').hidden = false;
 
-    // Odemčení zvuku uživatelským gestem – bez něj iOS ani Android
-    // nedovolí pozdější automatické spuštění.
+    // Odemčení zvuku uživatelským gestem – bez něj prohlížeč pozdější
+    // automatické spuštění nedovolí.
     zvuk.src = TICHO;
     var slib = zvuk.play();
     if (slib && slib.then) {
@@ -452,7 +495,9 @@
 
     postavMapu();
     postavSeznam();
-    setTimeout(function () { if (mapa) { mapa.invalidateSize(); } }, 120);
+    setTimeout(function () {
+      if (mapa) { mapa.invalidateSize(); srovnejMapu(); }
+    }, 150);
 
     spustSledovani();
     drzObrazovku();
@@ -463,6 +508,7 @@
 
   function navazUdalosti() {
     $('btn-start').addEventListener('click', start);
+    $('btn-stahnout').addEventListener('click', stahniVse);
 
     $('btn-prehrat').addEventListener('click', function () {
       if (aktivni === -1) { prehraj(0, 'rucne'); return; }
@@ -484,8 +530,9 @@
 
     $('btn-reset').addEventListener('click', function () {
       stav.forEach(function (s) { s.prehrano = false; s.uvnitr = false; });
+      dalsi = 0;
       automatika = true;
-      hlaseni('Automatické přehrávání bylo obnoveno. Všechny zastávky se mohou spustit znovu.');
+      hlaseni('Automatické spouštění bylo obnoveno od první zóny.');
       obnovSeznam();
     });
 
