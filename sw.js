@@ -5,7 +5,7 @@
  * zvyšte číslo verze níže, jinak se posluchačům nová verze nemusí projevit.
  */
 
-var VERZE = 'audiochuze-v3';
+var VERZE = 'audiochuze-v4';
 
 // Při instalaci se ukládá jen kostra aplikace a první nahrávka; zbylých
 // dvacet megabajtů audia si posluchač stáhne tlačítkem na úvodní obrazovce

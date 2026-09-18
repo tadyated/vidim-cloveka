@@ -133,20 +133,20 @@
     }).addTo(mapa);
 
     if (data.trasa && data.trasa.length) {
-      L.polyline(data.trasa, { color: '#e0a458', weight: 4, opacity: 0.65 }).addTo(mapa);
+      L.polyline(data.trasa, { color: '#1c59ff', weight: 5, opacity: 0.55 }).addTo(mapa);
     }
 
     (data.zastaveni || []).forEach(function (z) {
       L.circleMarker([z.lat, z.lon], {
-        radius: 5, color: '#eef2f5', weight: 2, fillColor: '#12171c', fillOpacity: 1
+        radius: 5, color: '#ffffff', weight: 2, fillColor: '#16173a', fillOpacity: 1
       }).addTo(mapa).bindTooltip(z.nazev);
     });
 
     zony.forEach(function (z, i) {
       L.circle([z.lat, z.lon], {
         radius: polomerZony(i),
-        color: '#e0a458', weight: 1, opacity: 0.5,
-        fillColor: '#e0a458', fillOpacity: 0.09
+        color: '#1c59ff', weight: 1.5, opacity: 0.55,
+        fillColor: '#1c59ff', fillOpacity: 0.1
       }).addTo(mapa);
 
       var znacka = L.marker([z.lat, z.lon], {
@@ -383,11 +383,11 @@
     if (mapa) {
       if (!znackaUzivatele) {
         znackaUzivatele = L.circleMarker([lat, lon], {
-          radius: 7, color: '#ffffff', weight: 2, fillColor: '#4a90d9', fillOpacity: 1
+          radius: 8, color: '#ffffff', weight: 3, fillColor: '#16173a', fillOpacity: 1
         }).addTo(mapa).bindTooltip('Vaše poloha');
         kruhPresnosti = L.circle([lat, lon], {
-          radius: presnost, color: '#4a90d9', weight: 1, opacity: 0.4,
-          fillColor: '#4a90d9', fillOpacity: 0.08
+          radius: presnost, color: '#16173a', weight: 1, opacity: 0.35,
+          fillColor: '#16173a', fillOpacity: 0.07
         }).addTo(mapa);
       } else {
         znackaUzivatele.setLatLng([lat, lon]);
