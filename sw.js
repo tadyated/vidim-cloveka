@@ -5,7 +5,7 @@
  * zvyšte číslo verze níže, jinak se posluchačům nová verze nemusí projevit.
  */
 
-var VERZE = 'audiochuze-v4';
+var VERZE = 'audiochuze-v5';
 
 // Při instalaci se ukládá jen kostra aplikace a první nahrávka; zbylých
 // dvacet megabajtů audia si posluchač stáhne tlačítkem na úvodní obrazovce
@@ -20,6 +20,7 @@ var PRECACHE = [
   'ikony/ikona-192.png',
   'obrazky/zahlavi.jpg',
   'audio/zona-1.mp3',
+  'https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&display=swap',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
 ];
@@ -74,7 +75,10 @@ self.addEventListener('fetch', function (e) {
     caches.match(req).then(function (nalezeno) {
       if (nalezeno) { return nalezeno; }
       return fetch(req).then(function (odpoved) {
-        if (odpoved && odpoved.status === 200 && req.url.indexOf(self.location.origin) === 0) {
+        var vlastni = req.url.indexOf(self.location.origin) === 0;
+        var pismo = req.url.indexOf('https://fonts.gstatic.com') === 0 ||
+                    req.url.indexOf('https://fonts.googleapis.com') === 0;
+        if (odpoved && odpoved.status === 200 && (vlastni || pismo)) {
           var kopie = odpoved.clone();
           caches.open(jeAudio ? MEDIA : VERZE).then(function (c) { c.put(req, kopie); });
         }
