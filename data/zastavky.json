@@ -1,0 +1,84 @@
+{
+  "prochazka": {
+    "nadtitulek": "Audioprocházka",
+    "nazev": "Název procházky",
+    "perex": "Sedm zastávek, sedm nahrávek. Vezměte si sluchátka a vydejte se po trase – nahrávky se spustí samy, jakmile k zastávce dojdete.",
+    "delka_trasy": "2,1 km",
+    "paticka": "Zástupná data. Doplňte v souboru data/zastavky.json.",
+    "dlazdice": "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    "dlazdice_uvedeni": "&copy; přispěvatelé <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a>"
+  },
+
+  "nastaveni": {
+    "polomer": 30,
+    "hystereze": 1.6,
+    "presnost_limit": 60,
+    "skok": 15
+  },
+
+  "zastavky": [
+    {
+      "nazev": "Zastávka 1 – zástupný název",
+      "misto": "náměstí Republiky, Plzeň",
+      "lat": 49.7475,
+      "lon": 13.3776,
+      "polomer": 30,
+      "audio": "audio/zastavka-1.mp3",
+      "prepis": "Zde bude přepis první nahrávky. Přepis slouží lidem, kteří neslyší, nemají sluchátka nebo si chtějí obsah přečíst později."
+    },
+    {
+      "nazev": "Zastávka 2 – zástupný název",
+      "misto": "Riegrova, Plzeň",
+      "lat": 49.7464,
+      "lon": 13.3796,
+      "polomer": 30,
+      "audio": "audio/zastavka-2.mp3",
+      "prepis": "Zde bude přepis druhé nahrávky."
+    },
+    {
+      "nazev": "Zastávka 3 – zástupný název",
+      "misto": "Smetanovy sady, Plzeň",
+      "lat": 49.7454,
+      "lon": 13.3766,
+      "polomer": 30,
+      "audio": "audio/zastavka-3.mp3",
+      "prepis": "Zde bude přepis třetí nahrávky."
+    },
+    {
+      "nazev": "Zastávka 4 – zástupný název",
+      "misto": "Sady Pětatřicátníků, Plzeň",
+      "lat": 49.7462,
+      "lon": 13.372,
+      "polomer": 35,
+      "audio": "audio/zastavka-4.mp3",
+      "prepis": "Zde bude přepis čtvrté nahrávky."
+    },
+    {
+      "nazev": "Zastávka 5 – zástupný název",
+      "misto": "Mlýnská strouha, Plzeň",
+      "lat": 49.7487,
+      "lon": 13.3724,
+      "polomer": 30,
+      "audio": "audio/zastavka-5.mp3",
+      "prepis": "Zde bude přepis páté nahrávky."
+    },
+    {
+      "nazev": "Zastávka 6 – zástupný název",
+      "misto": "Pražská, Plzeň",
+      "lat": 49.7503,
+      "lon": 13.3768,
+      "polomer": 30,
+      "audio": "audio/zastavka-6.mp3",
+      "prepis": "Zde bude přepis šesté nahrávky."
+    },
+    {
+      "nazev": "Zastávka 7 – zástupný název",
+      "misto": "Křižíkovy sady, Plzeň",
+      "lat": 49.7496,
+      "lon": 13.3812,
+      "polomer": 30,
+      "audio": "audio/zastavka-7.mp3",
+      "prepis": "Zde bude přepis sedmé nahrávky."
+    }
+  ]
+}

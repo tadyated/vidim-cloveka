@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1f2933">
+<title>Audioprocházka</title>
+<meta name="description" content="Geolokovaná audioprocházka o sedmi zastávkách. Nahrávky se spouštějí podle polohy, vždy je lze přehrát i ručně.">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<link rel="stylesheet" href="css/styl.css">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="ikony/ikona-192.png" sizes="192x192">
+<link rel="apple-touch-icon" href="ikony/ikona-192.png">
+</head>
+<body>
+
+<!-- ÚVODNÍ OBRAZOVKA -------------------------------------------------- -->
+<section id="uvod" class="uvod" aria-labelledby="uvod-nadpis">
+  <div class="uvod-obsah">
+    <p class="uvod-nadtitulek" id="nadtitulek">Audioprocházka</p>
+    <h1 id="uvod-nadpis">Název procházky</h1>
+    <p id="uvod-perex" class="uvod-perex">Krátký popis procházky. Doplňte v souboru <code>data/zastavky.json</code>.</p>
+
+    <ul class="uvod-fakta">
+      <li><strong id="fakt-pocet">7</strong> zastávek</li>
+      <li><strong id="fakt-delka">–</strong> stopáže</li>
+      <li><strong id="fakt-trasa">–</strong> trasy</li>
+    </ul>
+
+    <button id="btn-start" class="btn btn-hlavni" type="button">Začít procházku</button>
+
+    <p class="uvod-pozn">
+      Aplikace požádá o přístup k poloze. Nahrávky se pak spouštějí samy,
+      jakmile se přiblížíte k zastávce. Přehrát je můžete kdykoli i ručně.
+      Poloha zůstává ve vašem telefonu a nikam se neodesílá.
+    </p>
+    <p class="uvod-pozn uvod-pozn-slabsi">
+      Doporučujeme sluchátka. Sledujte provoz – zvuk si žádá pozornost, kterou ulice potřebuje také.
+    </p>
+  </div>
+</section>
+
+<!-- APLIKACE ---------------------------------------------------------- -->
+<div id="aplikace" class="aplikace" hidden>
+
+  <header class="hlavicka">
+    <h1 class="hlavicka-titulek" id="hlavicka-titulek">Audioprocházka</h1>
+    <div class="hlavicka-stav">
+      <span id="stav-gps" class="odznak odznak-ceka">Hledám polohu…</span>
+    </div>
+  </header>
+
+  <div id="mapa" class="mapa" role="application" aria-label="Mapa zastávek"></div>
+
+  <main class="seznam-obal">
+    <div id="hlaseni" class="hlaseni" role="status" aria-live="polite" hidden></div>
+    <ol id="seznam" class="seznam"></ol>
+    <footer class="paticka">
+      <p id="paticka-text">Audioprocházka</p>
+      <p><button id="btn-reset" class="btn btn-textovy" type="button">Znovu povolit automatické přehrávání</button></p>
+    </footer>
+  </main>
+
+  <!-- PŘEHRÁVAČ -->
+  <div id="prehravac" class="prehravac" hidden>
+    <div class="prehravac-info">
+      <p class="prehravac-nadtitulek" id="prehravac-cislo">Zastávka 1</p>
+      <p class="prehravac-nazev" id="prehravac-nazev">—</p>
+    </div>
+    <div class="prehravac-ovladani">
+      <button id="btn-zpet" class="btn btn-kulaty" type="button" aria-label="O 15 sekund zpět">−15</button>
+      <button id="btn-prehrat" class="btn btn-kulaty btn-prehrat" type="button" aria-label="Přehrát">
+        <span id="ikona-prehrat" aria-hidden="true">▶</span>
+      </button>
+      <button id="btn-vpred" class="btn btn-kulaty" type="button" aria-label="O 15 sekund vpřed">+15</button>
+    </div>
+    <div class="prehravac-lista">
+      <input id="pozice" class="pozice" type="range" min="0" max="1000" value="0" step="1" aria-label="Pozice v nahrávce">
+      <div class="prehravac-casy"><span id="cas-ted">0:00</span><span id="cas-celkem">0:00</span></div>
+    </div>
+  </div>
+
+  <audio id="zvuk" preload="none" playsinline></audio>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="js/app.js"></script>
+</body>
+</html>
